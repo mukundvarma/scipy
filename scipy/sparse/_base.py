@@ -1184,6 +1184,74 @@ class spmatrix:
             return (inter_self * (1.0 / self.shape[1])).sum(
                 axis=1, dtype=res_dtype, out=out)
 
+    def var(self, axis=None, dtype=None, out=None):
+        """
+        Compute the variance along the specified axis.
+
+        Returns the variance of the matrix elements. The variance is
+        calculated according to the formula
+            Var(X) = E[X^2] - E[X]^2
+
+        Parameters
+        ----------
+        axis : {-2, -1, 0, 1, None} optional
+            Axis along which the variance is computed. The default is to compute
+            the variance of all elements in the matrix (i.e., `axis` = `None`).
+        dtype : data-type, optional
+            Type to use in computing the variance. For integer inputs, the default
+            is `float64`; for floating point inputs, it is the same as the
+            input dtype.
+
+            .. versionadded:: 0.18.0
+        out : np.matrix, optional
+            Alternative output matrix in which to place the result. It must
+            have the same shape as the expected output, but the type of the
+            output values will be cast if necessary.
+
+            .. versionadded:: 0.18.0
+
+        Returns
+        -------
+        m : np.matrix
+
+        See Also
+        --------
+
+        """
+        def _is_integral(dtype):
+            return (np.issubdtype(dtype, np.integer) or
+                    np.issubdtype(dtype, np.bool_))
+
+        validateaxis(axis)
+
+        res_dtype = self.dtype.type
+        integral = _is_integral(self.dtype)
+
+        # output dtype
+        if dtype is None:
+            if integral:
+                res_dtype = np.float64
+        else:
+            res_dtype = np.dtype(dtype).type
+
+       # E[X]
+        mean = self.mean(axis=axis, dtype=res_dtype)
+
+        # E[X^2]
+        mean_sqr = self.power(2).mean(axis=axis, dtype=res_dtype)
+
+        # E[X^2] - E[X]^2
+        ret = np.subtract(np.asarray(mean_sqr), np.asarray(mean) ** 2, out=out)
+
+        if axis is not None:
+            ret = np.asmatrix(ret)
+        
+        if out is None:
+            return ret
+        else:
+            if (axis is not None) and (out.shape != ret.shape):
+                raise ValueError("dimensions do not match") 
+
     def diagonal(self, k=0):
         """Returns the kth diagonal of the matrix.
 
